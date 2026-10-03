@@ -10,9 +10,12 @@
             --bg-color: #fafafa;
             --card-bg: #ffffff;
             --card-border: #e4e4e7;
+            --card-border-hover: #cbd5e1;
             --text-primary: #09090b;
             --text-secondary: #71717a;
             --icon-bg: #f4f4f5;
+            --icon-color: #3f3f46;
+            --focus-ring: #2563eb;
             --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
             --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
         }
@@ -31,8 +34,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 2rem;
+            justify-content: flex-start;
+            padding: 4rem 2rem;
         }
 
         .dashboard-container {
@@ -42,13 +45,12 @@
 
         header {
             margin-bottom: 3rem;
-            text-align: left;
         }
 
         h1 {
             font-size: 2.25rem;
             font-weight: 700;
-            letter-spacing: -0.05em;
+            letter-spacing: -0.03em;
             margin-bottom: 0.5rem;
             color: var(--text-primary);
         }
@@ -56,6 +58,7 @@
         .subtitle {
             color: var(--text-secondary);
             font-size: 1rem;
+            font-weight: 400;
         }
 
         .grid {
@@ -72,40 +75,64 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
             box-shadow: var(--card-shadow);
-            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                        border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                        box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .card:hover {
+        /* Interactive states for links */
+        a.card {
+            cursor: pointer;
+        }
+
+        a.card:hover {
             transform: translateY(-4px);
-            border-color: #cbd5e1;
+            border-color: var(--card-border-hover);
             box-shadow: var(--card-shadow-hover);
         }
 
-        .icon {
-            font-size: 1.75rem;
+        a.card:focus-visible {
+            outline: 2px solid var(--focus-ring);
+            outline-offset: 4px;
+        }
+
+        /* Non-link placeholder cards */
+        div.card {
+            cursor: default;
+            opacity: 0.85;
+        }
+
+        .icon-wrapper {
             background: var(--icon-bg);
-            width: 50px;
-            height: 50px;
+            color: var(--icon-color);
+            width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 8px;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .icon-wrapper svg {
+            width: 24px;
+            height: 24px;
         }
 
         .card h2 {
             font-size: 1.25rem;
             font-weight: 600;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.01em;
             color: var(--text-primary);
         }
 
         .card p {
             color: var(--text-secondary);
             font-size: 0.925rem;
-            line-height: 1.5;
+            line-height: 1.6;
         }
     </style>
 </head>
@@ -115,62 +142,97 @@
     <div class="dashboard-container">
         <header>
             <h1>Leaders Hub</h1>
-            <p class="subtitle">Select an activity</p>
+            <p class="subtitle">Select an application or activity module</p>
         </header>
 
         <main class="grid">
             <!-- Card 1: Programme Scheduler -->
             <a href="https://magicstreak.github.io/CBMW-walk-scheduler/" class="card">
-                <div class="card-icon"><span>📅</span></div>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </div>
                 <h2>Programme Scheduler</h2>
-                <p>Coordinate walk offers for the seasons programme.</p>
+                <p>Coordinate walk offers for the upcoming seasonal schedule program.</p>
             </a>
 
             <!-- Card 2: Walk Route Database -->
             <a href="https://magicstreak.github.io/CBMW-Programme-Planner/" class="card">
-                <div class="card-icon"><span>🗺️</span></div>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                        <line x1="8" y1="2" x2="8" y2="18"></line>
+                        <line x1="16" y1="6" x2="16" y2="22"></line>
+                    </svg>
+                </div>
                 <h2>Walk Route Database</h2>
-                <p>Catalog of CBMW walking routes</p>
+                <p>Browse and explore the verified database catalog of CBMW walking routes.</p>
             </a>
 
-            <!-- Card 3 -->
-            <div class="card">
-                <div class="icon">👥</div>
-                <h2>Leader Directory</h2>
-                <p>Manage Directory of Leaders</p>
-            </div>
-            <!-- Card 4: Post Walk Statistics -->
+            <!-- Card 3: Post Walk Statistics -->
             <a href="https://magicstreak.github.io/postwalk-stats/" class="card">
-                <div class="card-icon"><span>📊</span></div>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                </div>
                 <h2>Post Walk Statistics</h2>
-                <p>Review walk numbers with analytical charts and data summaries.</p>
+                <p>Review total walker counts alongside structured analytical charts and historical logs.</p>
             </a>
-            <!-- Card 5 -->
+
+            <!-- Card 4: Leader Directory -->
             <div class="card">
-                <div class="icon">👥</div>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
                 <h2>Leader Directory</h2>
-                <p>Manage Directory of Leaders</p>
+                <p>Access operational contact registries and management tools for group leaders.</p>
             </div>
 
-            <!-- Card 6 -->
+            <!-- Card 5: Library -->
             <div class="card">
-                <div class="icon">📚</div>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"></path>
+                    </svg>
+                </div>
                 <h2>Library</h2>
-                <p>Access documentation resources, and shared leadership guides.</p>
+                <p>Access documentation templates, safety guidelines, and leadership files.</p>
             </div>
 
-            <!-- Card 7 -->
+            <!-- Card 6: Calendar -->
             <div class="card">
-                <div class="icon">📆</div>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
                 <h2>Calendar</h2>
-                <p>Track upcoming important dates, deadlines and events etc.</p>
+                <p>Track critical committee agenda target milestones, event dates, and operational deadlines.</p>
             </div>
 
-            <!-- Card 8 -->
+            <!-- Card 7: Noticeboard -->
             <div class="card">
-                <div class="icon">📌</div>
+                <div class="icon-wrapper">
+                    <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
                 <h2>Noticeboard</h2>
-                <p>Exchange Information.</p>
+                <p>Review or exchange real-time updates and internal administrative board announcements.</p>
             </div>
         </main>
     </div>
