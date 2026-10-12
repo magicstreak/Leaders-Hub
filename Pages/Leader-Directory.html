@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 
@@ -26,19 +25,6 @@
       --shadow-panel: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
       --shadow-float: 0 16px 32px -8px rgba(15, 23, 42, 0.25);
     }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        --border: #334155;
-        --text: #e2e8f0;
-        --text-muted: #94a3b8;
-      }
-    }
-    :root[data-theme="dark"] {
-      --border: #334155;
-      --text: #e2e8f0;
-      --text-muted: #94a3b8;
-    }
-
     * { box-sizing: border-box; }
 
     body {
@@ -351,7 +337,7 @@
       document.getElementById("page-title").textContent = titles[VIEW][0];
       document.getElementById("page-subtitle").textContent = titles[VIEW][1];
       document.getElementById("add-leader").hidden = !isAdmin;
-      document.getElementById("actions-head").hidden = VIEW === "walker";
+      document.getElementById("actions-head").hidden = !isAdmin;
       document.getElementById("pending-panel").hidden = !isAdmin;
       document.getElementById("picker-wrap").hidden = !isLeader || !!params.get("leader_id");
     }
@@ -381,19 +367,21 @@
         if (isAdmin) {
           actions = `<button type="button" class="btn btn-small" data-action="edit" data-id="${escapeHtml(l.leader_id)}">Edit</button>
             <button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="${escapeHtml(l.leader_id)}">Delete</button>`;
-        } else if (mine) {
-          actions = `<button type="button" class="btn btn-small" data-action="request" data-id="${escapeHtml(l.leader_id)}">Request change</button>`;
         }
+        // Leader view: the request button sits beside the leader's own name, so it shows without scrolling
+        const requestBtn = mine
+          ? ` <button type="button" class="btn btn-small" data-action="request" data-id="${escapeHtml(l.leader_id)}">Request change</button>`
+          : "";
 
         return `<tr class="${mine ? "is-me" : ""}">
           <td class="id-cell">${escapeHtml(l.leader_id)}</td>
-          <td>${escapeHtml(fullName(l))}${mine ? ` <span class="muted">(you)</span>` : ""}${waiting ? ` <span class="pill pill-pending">Change pending</span>` : ""}</td>
+          <td>${escapeHtml(fullName(l))}${mine ? ` <span class="muted">(you)</span>` : ""}${waiting ? ` <span class="pill pill-pending">Change pending</span>` : ""}${requestBtn}</td>
           <td>${l.phone_1 ? `<a href="tel:${escapeHtml(l.phone_1.replace(/[^\d+]/g, ""))}">${escapeHtml(l.phone_1)}</a>` : "–"}</td>
           <td>${l.phone_2 ? `<a href="tel:${escapeHtml(l.phone_2.replace(/[^\d+]/g, ""))}">${escapeHtml(l.phone_2)}</a>` : "–"}</td>
           <td>${l.email_add ? `<a href="mailto:${escapeHtml(l.email_add)}">${escapeHtml(l.email_add)}</a>` : "–"}</td>
           <td>${l.whats_app === "y" ? `<span class="pill pill-whatsapp">WhatsApp</span>` : ""}</td>
           <td>${linked ? `${escapeHtml(fullName(linked))} <span class="muted">(${escapeHtml(linked.leader_id)})</span>` : (l.linked_leader ? `<span class="muted">${escapeHtml(l.linked_leader)} (missing)</span>` : "–")}</td>
-          ${VIEW === "walker" ? "" : `<td class="actions-cell">${actions}</td>`}
+          ${isAdmin ? `<td class="actions-cell">${actions}</td>` : ""}
         </tr>`;
       }).join("");
 
