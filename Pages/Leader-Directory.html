@@ -298,8 +298,8 @@
       { key: "phone_1", label: "Phone 1", type: "tel", required: true },
       { key: "phone_2", label: "Phone 2", type: "tel" },
       { key: "email_add", label: "Email", type: "email", required: true },
-      { key: "whats_app", label: "WhatsApp preferred", type: "whatsapp", required: true },
-      { key: "linked_leader", label: "Linked leader", type: "leader", hint: "Another leader's ID, e.g. a co-leader" },
+      { key: "whats_app", label: "WhatsApp preferred", type: "whatsapp" },
+      { key: "linked_leader", label: "Linked leader", type: "leader", hint: "Another leader, e.g. a co-leader" },
     ];
     const ID_FIELD = { key: "leader_id", label: "Leader ID", required: true };
     const CHANGE_LABELS = Object.fromEntries([ID_FIELD, ...EDITABLE_FIELDS].map((f) => [f.key, f.label]));
@@ -375,7 +375,7 @@
 
         return `<tr class="${mine ? "is-me" : ""}">
           <td class="id-cell">${escapeHtml(l.leader_id)}</td>
-          <td>${escapeHtml(fullName(l))}${mine ? ` <span class="muted">(you)</span>` : ""}${waiting ? ` <span class="pill pill-pending">Change pending</span>` : ""}${requestBtn}</td>
+          <td>${escapeHtml(fullName(l))}${mine ? ` <span class="muted">(you)</span>` : ""}${waiting && VIEW !== "walker" ? ` <span class="pill pill-pending">Change pending</span>` : ""}${requestBtn}</td>
           <td>${l.phone_1 ? `<a href="tel:${escapeHtml(l.phone_1.replace(/[^\d+]/g, ""))}">${escapeHtml(l.phone_1)}</a>` : "–"}</td>
           <td>${l.phone_2 ? `<a href="tel:${escapeHtml(l.phone_2.replace(/[^\d+]/g, ""))}">${escapeHtml(l.phone_2)}</a>` : "–"}</td>
           <td>${l.email_add ? `<a href="mailto:${escapeHtml(l.email_add)}">${escapeHtml(l.email_add)}</a>` : "–"}</td>
@@ -429,7 +429,7 @@
     }
 
     function statusLabel(status) {
-      return { pending: "Waiting for approval", approved: "Approved", rejected: "Not approved" }[status] || status;
+      return { pending: "Waiting for approval", approved: "Approved", rejected: "Rejected" }[status] || status;
     }
     function formatDate(iso) {
       const d = new Date(iso);
@@ -488,7 +488,7 @@
         fields = [ID_FIELD, ...EDITABLE_FIELDS];
       } else if (mode === "edit") {
         title.textContent = `Edit ${fullName(leader)}`;
-        lede.textContent = "Changes apply straight away.";
+        lede.textContent = "Admin changes apply straight away.";
         submit.textContent = "Save changes";
         fields = [ID_FIELD, ...EDITABLE_FIELDS];
       } else {
@@ -529,7 +529,7 @@
       if (record.whats_app !== "y") record.whats_app = "n";
 
       if (mode !== "request") {
-        if (!/^\d+$/.test(record.leader_id)) return showError("Leader ID must be a number."), null;
+        if (record.leader_id && !/^\d+$/.test(record.leader_id)) return showError("Leader ID must be a number."), null;
         if (mode === "create" && leaderById(record.leader_id)) return showError(`Leader ID ${record.leader_id} is already used.`), null;
       }
       for (const f of [...(mode === "request" ? [] : [ID_FIELD]), ...EDITABLE_FIELDS]) {
@@ -556,6 +556,8 @@
 
       try {
         if (mode === "create" || mode === "edit") {
+          const waitingFor = Object.values(requests).filter((r) => r && r.status === "pending" && String(r.leader_id) === String(record.leader_id));
+          if (mode === "edit" && waitingFor.length && !confirm("This leader has a change waiting for approval. Save anyway?")) return;
           await set(ref(db, "leaders/" + record.leader_id), record);
         } else {
           const current = dialogLeader;
@@ -616,10 +618,13 @@
         const notes = [];
         if (usedBy) notes.push(`${usedBy} walk booking(s) use this leader. Their name stays on the booking, but the contact details will no longer show.`);
         if (linkedBy) notes.push(`${linkedBy} leader(s) are linked to this leader. Their link will show as missing.`);
+        const pendingReqs = Object.values(requests).filter((r) => r && r.status === "pending" && String(r.leader_id) === String(leader.leader_id));
+        if (pendingReqs.length) notes.push(`${pendingReqs.length} change request(s) from this leader will also be deleted.`);
         const message = `Delete ${fullName(leader)} (ID ${leader.leader_id})?${notes.length ? "\n\n" + notes.join("\n") : ""}`;
         if (!confirm(message)) return;
         try {
           await remove(ref(db, "leaders/" + leader.leader_id));
+          await Promise.all(pendingReqs.map((r) => remove(ref(db, "leader_requests/" + r.request_id)))).catch(() => {});
         } catch (err) {
           console.error("Delete failed:", err);
           alert("Could not delete. Check the database permissions.");
