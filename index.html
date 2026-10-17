@@ -57,10 +57,10 @@
 <div class="hub-wrap">
   <div class="hub-container">
     <div id="hub-cards">
-
+      <h1>Leaders Hub</h1>
       <main class="hub-grid">
 
-        <!-- Walk Programme: opens the scheduler inside the hub -->
+        <!-- Programme Scheduler: opens the scheduler inside the hub -->
         <a href="?view=programme-scheduler" class="hub-card">
           <div class="hub-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -70,11 +70,11 @@
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
           </div>
-          <h2>Walk Programme</h2>
+          <h2>Programme Scheduler</h2>
           <p>Coordinate walk offers for the upcoming seasonal schedule. Filter by dates and group leaders.</p>
         </a>
 
-        <!-- Walk Route Database -->
+        <!-- Walk Database -->
         <a href="?view=walks-database" class="hub-card">
           <div class="hub-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -83,11 +83,11 @@
               <line x1="16" y1="6" x2="16" y2="22"></line>
             </svg>
           </div>
-          <h2>Walk Route Database</h2>
+          <h2>Walk Database</h2>
           <p>Browse the verified catalog of CBMW walking routes and request changes.</p>
         </a>
 
-        <!-- Leaders Database -->
+        <!-- Leader Directory -->
         <a href="?view=leaders" class="hub-card">
           <div class="hub-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -97,7 +97,7 @@
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
           </div>
-          <h2>Leaders Database</h2>
+          <h2>Leader Directory</h2>
           <p>Contact details for group leaders, and requests to update your own.</p>
         </a>
 
@@ -154,7 +154,7 @@
 
     <!-- Opened when a card links to an app -->
     <div id="hub-frame-wrap" style="display: none;">
-      <a href="?" class="hub-back">← Back to Leaders Hub</a>
+      <a href="?" class="hub-back">&larr; Back to Leaders Hub</a>
       <iframe id="hub-frame" class="hub-frame" src="" title="CBMW app"></iframe>
     </div>
   </div>
@@ -176,12 +176,16 @@
       const wrap = document.getElementById("hub-frame-wrap");
       Object.assign(wrap.style, {
         position: "fixed", top: "0", left: "0", right: "0", bottom: "0",
-        zIndex: "99999", background: "#fff", padding: "8px 12px", overflow: "hidden", display: "block"
+        zIndex: "99999", background: "#fff", padding: "8px 12px", boxSizing: "border-box",
+        overflow: "hidden", display: "flex", flexDirection: "column"
       });
+      // The frame fills the space left under the back link, so nothing sits below the phone's visible area
+      wrap.querySelector(".hub-back").style.flex = "0 0 auto";
       document.body.style.overflow = "hidden";
       document.documentElement.style.overflow = "hidden";
       const frame = document.getElementById("hub-frame");
-      frame.style.height = "calc(100vh - 50px)";
+      frame.style.flex = "1 1 auto";
+      frame.style.height = "auto";
       frame.style.minHeight = "0";
       frame.style.boxShadow = "none";
       frame.src = APPS[current];
