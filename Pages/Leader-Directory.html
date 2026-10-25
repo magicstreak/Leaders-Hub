@@ -116,6 +116,10 @@
       white-space: nowrap;
     }
     .leaders-table th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .leaders-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    .leaders-table th.sortable:focus-visible { outline: 2px solid var(--primary, #2f6b4a); outline-offset: 2px; }
+    .leaders-table th.sortable .sort-indicator { opacity: 0.6; margin-left: 2px; }
+    .leaders-table th.sortable[aria-sort="ascending"] .sort-indicator, .leaders-table th.sortable[aria-sort="descending"] .sort-indicator { opacity: 1; color: #1f5a3a; }
     .leaders-table tr.is-me td { background: #f0f9f3; }
     .leaders-table a { color: var(--primary); }
     .id-cell { font-variant-numeric: tabular-nums; color: var(--text-muted); }
@@ -226,13 +230,13 @@
         <table class="leaders-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Phone 1</th>
-              <th>Phone 2</th>
-              <th id="email-head">Email</th>
-              <th>WhatsApp</th>
-              <th>Linked leader</th>
+              <th class="sortable" data-sort="id" tabindex="0" aria-sort="ascending">ID <span class="sort-indicator">↑</span></th>
+              <th class="sortable" data-sort="name" tabindex="0">Name <span class="sort-indicator">↕</span></th>
+              <th class="sortable" data-sort="phone1" tabindex="0">Phone 1 <span class="sort-indicator">↕</span></th>
+              <th class="sortable" data-sort="phone2" tabindex="0">Phone 2 <span class="sort-indicator">↕</span></th>
+              <th id="email-head" class="sortable" data-sort="email" tabindex="0">Email <span class="sort-indicator">↕</span></th>
+              <th class="sortable" data-sort="whatsapp" tabindex="0">WhatsApp <span class="sort-indicator">↕</span></th>
+              <th class="sortable" data-sort="linked" tabindex="0">Linked leader <span class="sort-indicator">↕</span></th>
               <th class="actions-col" id="actions-head" hidden></th>
             </tr>
           </thead>
@@ -363,17 +367,62 @@
       }
     }
 
+    // Column sorting: click a sortable header to sort; click again to reverse
+    let leaderSort = { key: "id", dir: "asc" };
+    function leaderSortValue(l, key) {
+      if (key === "id") return Number(l.leader_id);
+      if (key === "name") return fullName(l).toLowerCase();
+      if (key === "phone1") return str(l.phone_1);
+      if (key === "phone2") return str(l.phone_2);
+      if (key === "email") return str(l.email_add).toLowerCase();
+      if (key === "whatsapp") return l.whats_app === "y" ? 0 : 1;
+      if (key === "linked") { const linked = leaderById(l.linked_leader); return linked ? fullName(linked).toLowerCase() : ""; }
+      return "";
+    }
+    function sortLeaders(rows) {
+      const { key, dir } = leaderSort;
+      const mult = dir === "desc" ? -1 : 1;
+      return [...rows].sort((a, b) => {
+        const va = leaderSortValue(a, key), vb = leaderSortValue(b, key);
+        const ea = va === "" || va === null || Number.isNaN(va), eb = vb === "" || vb === null || Number.isNaN(vb);
+        // Empty values always sort to the bottom
+        if (ea || eb) return ea === eb ? 0 : (ea ? 1 : -1);
+        if (typeof va === "number" && typeof vb === "number") return (va - vb) * mult;
+        return String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: "base" }) * mult;
+      });
+    }
+    function updateLeaderSortHeaders() {
+      document.querySelectorAll(".leaders-table th[data-sort]").forEach((th) => {
+        const active = th.dataset.sort === leaderSort.key;
+        th.setAttribute("aria-sort", active ? (leaderSort.dir === "desc" ? "descending" : "ascending") : "none");
+        const ind = th.querySelector(".sort-indicator");
+        if (ind) ind.textContent = active ? (leaderSort.dir === "desc" ? "↓" : "↑") : "↕";
+      });
+    }
+    function setLeaderSort(key) {
+      leaderSort = leaderSort.key === key
+        ? { key, dir: leaderSort.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: "asc" };
+      updateLeaderSortHeaders();
+      renderTable();
+    }
+    document.querySelectorAll(".leaders-table th[data-sort]").forEach((th) => {
+      th.addEventListener("click", () => setLeaderSort(th.dataset.sort));
+      th.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLeaderSort(th.dataset.sort); } });
+    });
+    updateLeaderSortHeaders();
+
     function renderTable() {
       const term = str(document.getElementById("search").value).toLowerCase();
       // Leader view: emails are not shown in the list or searched (they remain in the edit/request modal).
       document.getElementById("email-head").hidden = isLeader;
-      const rows = leaders.filter((l) => {
+      const rows = sortLeaders(leaders.filter((l) => {
         if (!term) return true;
         const searchable = isLeader
           ? [l.leader_id, fullName(l), l.phone_1, l.phone_2]
           : [l.leader_id, fullName(l), l.email_add, l.phone_1, l.phone_2];
         return searchable.join(" ").toLowerCase().includes(term);
-      });
+      }));
       document.getElementById("empty-note").hidden = rows.length > 0;
 
       document.getElementById("leaders-body").innerHTML = rows.map((l) => {
