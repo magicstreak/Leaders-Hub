@@ -116,6 +116,10 @@
       white-space: nowrap;
     }
     .leaders-table th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .leaders-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    .leaders-table th.sortable:focus-visible { outline: 2px solid var(--primary, #2f6b4a); outline-offset: 2px; }
+    .leaders-table th.sortable .sort-indicator { opacity: 0.6; margin-left: 2px; }
+    .leaders-table th.sortable[aria-sort="ascending"] .sort-indicator, .leaders-table th.sortable[aria-sort="descending"] .sort-indicator { opacity: 1; color: #1f5a3a; }
     .leaders-table tr.is-me td { background: #f0f9f3; }
     .leaders-table a { color: var(--primary); }
     .id-cell { font-variant-numeric: tabular-nums; color: var(--text-muted); }
@@ -202,8 +206,9 @@
         <div class="toolbar-group">
           <input type="search" id="search" placeholder="Search name, ID or email" aria-label="Search leaders" />
           <div id="picker-wrap" class="toolbar-group" hidden>
-            <label for="leader-picker" class="muted">I am</label>
-            <select id="leader-picker" aria-label="Choose your name"></select>
+            <label for="leader-email" class="muted">I am</label>
+            <input id="leader-email" type="email" placeholder="Your email address" aria-label="Your email address" autocomplete="email" />
+            <span id="picker-msg" class="muted" aria-live="polite" hidden></span>
           </div>
         </div>
         <div class="toolbar-group">
@@ -351,11 +356,61 @@
 
     function renderPicker() {
       if (!isLeader) return;
-      const select = document.getElementById("leader-picker");
-      const current = myLeaderId;
-      select.innerHTML = `<option value="" ${current ? "" : "selected"} disabled>Choose your name</option>` +
-        leaders.map((l) => `<option value="${escapeHtml(l.leader_id)}" ${l.leader_id === current ? "selected" : ""}>${escapeHtml(fullName(l))} (${escapeHtml(l.leader_id)})</option>`).join("");
+      const msg = document.getElementById("picker-msg");
+      const me = leaders.find((l) => l.leader_id === myLeaderId);
+      if (me) {
+        msg.hidden = false;
+        msg.textContent = `Showing as ${fullName(me)} (${me.leader_id})`;
+      } else {
+        msg.hidden = true;
+        msg.textContent = "";
+      }
     }
+
+    // Column sorting: click a sortable header to sort; click again to reverse
+    let leaderSort = { key: "id", dir: "asc" };
+    function leaderSortValue(l, key) {
+      if (key === "id") return Number(l.leader_id);
+      if (key === "name") return fullName(l).toLowerCase();
+      if (key === "phone1") return str(l.phone_1);
+      if (key === "phone2") return str(l.phone_2);
+      if (key === "email") return str(l.email_add).toLowerCase();
+      if (key === "whatsapp") return l.whats_app === "y" ? 0 : 1;
+      if (key === "linked") { const linked = leaderById(l.linked_leader); return linked ? fullName(linked).toLowerCase() : ""; }
+      return "";
+    }
+    function sortLeaders(rows) {
+      const { key, dir } = leaderSort;
+      const mult = dir === "desc" ? -1 : 1;
+      return [...rows].sort((a, b) => {
+        const va = leaderSortValue(a, key), vb = leaderSortValue(b, key);
+        const ea = va === "" || va === null || Number.isNaN(va), eb = vb === "" || vb === null || Number.isNaN(vb);
+        // Empty values always sort to the bottom
+        if (ea || eb) return ea === eb ? 0 : (ea ? 1 : -1);
+        if (typeof va === "number" && typeof vb === "number") return (va - vb) * mult;
+        return String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: "base" }) * mult;
+      });
+    }
+    function updateLeaderSortHeaders() {
+      document.querySelectorAll(".leaders-table th[data-sort]").forEach((th) => {
+        const active = th.dataset.sort === leaderSort.key;
+        th.setAttribute("aria-sort", active ? (leaderSort.dir === "desc" ? "descending" : "ascending") : "none");
+        const ind = th.querySelector(".sort-indicator");
+        if (ind) ind.textContent = active ? (leaderSort.dir === "desc" ? "↓" : "↑") : "↕";
+      });
+    }
+    function setLeaderSort(key) {
+      leaderSort = leaderSort.key === key
+        ? { key, dir: leaderSort.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: "asc" };
+      updateLeaderSortHeaders();
+      renderTable();
+    }
+    document.querySelectorAll(".leaders-table th[data-sort]").forEach((th) => {
+      th.addEventListener("click", () => setLeaderSort(th.dataset.sort));
+      th.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLeaderSort(th.dataset.sort); } });
+    });
+    updateLeaderSortHeaders();
 
     function renderTable() {
       const term = str(document.getElementById("search").value).toLowerCase();
@@ -401,7 +456,7 @@
     }
 
     function changeListHtml(request) {
-      return `<ul class="change-list">${Object.entries(request.changes || {}).map(([key, after]) => {
+      return `<ul class="change-list">${Object.entries(request.changes || {}).filter(([key]) => !(isLeader && key === "email_add")).map(([key, after]) => {
         const before = request.before?.[key];
         return `<li><strong>${escapeHtml(CHANGE_LABELS[key] || key)}:</strong> ${escapeHtml(before || "(blank)")} → ${escapeHtml(after || "(blank)")}</li>`;
       }).join("")}</ul>`;
@@ -610,9 +665,25 @@
     document.getElementById("add-leader").addEventListener("click", () => openDialog("create"));
     document.getElementById("search").addEventListener("input", renderTable);
 
-    document.getElementById("leader-picker").addEventListener("change", (e) => {
-      myLeaderId = e.target.value;
+    // Leader view: the leader types their email and the page finds their record. The email is never shown back.
+    function identifyByEmail() {
+      const typed = str(document.getElementById("leader-email").value).toLowerCase();
+      if (!typed) return;
+      const match = leaders.find((l) => str(l.email_add).toLowerCase() === typed);
+      if (!match) {
+        myLeaderId = "";
+        renderAll();
+        const msg = document.getElementById("picker-msg");
+        msg.hidden = false;
+        msg.textContent = "No leader found with that email address.";
+        return;
+      }
+      myLeaderId = match.leader_id;
       renderAll();
+    }
+    document.getElementById("leader-email").addEventListener("change", identifyByEmail);
+    document.getElementById("leader-email").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); identifyByEmail(); }
     });
 
     // Row buttons (edit, delete, request change)
