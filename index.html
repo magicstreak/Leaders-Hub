@@ -1,5 +1,6 @@
 <!-- CBMW Leaders Hub: paste the whole file into one WordPress "Custom HTML" block -->
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     .hub-wrap {
         --bg-color: #fafafa;
         --card-bg: #ffffff;
@@ -7,48 +8,60 @@
         --card-border-hover: #cbd5e1;
         --text-primary: #09090b;
         --text-secondary: #71717a;
-        --icon-bg: #f4f4f5;
-        --icon-color: #3f3f46;
+        --icon-bg: #e8f1eb;
+        --icon-color: #2d5b3e;
         --focus-ring: #2563eb;
         --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
         --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
         background: var(--bg-color);
         color: var(--text-primary);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        padding: 2rem 0;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        padding: 1rem 0;
     }
     .hub-wrap *, .hub-wrap *::before, .hub-wrap *::after { box-sizing: border-box; }
     .hub-container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 1.25rem; }
-    .hub-wrap h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 2rem; color: var(--text-primary); }
-    .hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .hub-wrap h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 1rem; color: #2d5b3e; }
+    .hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.75rem; }
     .hub-card {
         background: var(--card-bg);
         border: 1px solid var(--card-border);
-        border-radius: 12px;
-        padding: 2rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        border-radius: 10px;
+        padding: 0.8rem 0.9rem;
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        column-gap: 0.7rem;
+        row-gap: 0.2rem;
+        align-items: center;
+        align-content: center;
         text-decoration: none;
         color: inherit;
         box-shadow: var(--card-shadow);
         transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
     }
     a.hub-card { cursor: pointer; }
-    a.hub-card:hover { transform: translateY(-4px); border-color: var(--card-border-hover); box-shadow: var(--card-shadow-hover); }
+    a.hub-card:hover { transform: translateY(-4px); border-color: #2d5b3e; box-shadow: var(--card-shadow-hover); }
     a.hub-card:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
     div.hub-card { opacity: 0.85; }
     .hub-icon {
         background: var(--icon-bg);
         color: var(--icon-color);
-        width: 48px; height: 48px;
+        width: 36px; height: 36px;
         display: flex; align-items: center; justify-content: center;
         border-radius: 8px;
-        margin-bottom: 0.25rem;
+        grid-row: 1 / span 2;
     }
-    .hub-icon svg { width: 24px; height: 24px; }
-    .hub-card h2 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text-primary); margin: 0; }
-    .hub-card p { color: var(--text-secondary); font-size: 0.925rem; line-height: 1.6; margin: 0; }
+    .hub-icon svg { width: 18px; height: 18px; }
+    /* Slightly different tint for each card's icon background (all within the green family) */
+    .hub-grid > :nth-child(1) .hub-icon { background: #e2efe6; }
+    .hub-grid > :nth-child(2) .hub-icon { background: #d8f0e6; }
+    .hub-grid > :nth-child(3) .hub-icon { background: #d6eff0; }
+    .hub-grid > :nth-child(4) .hub-icon { background: #dbeaf3; }
+    .hub-grid > :nth-child(5) .hub-icon { background: #eaf1d6; }
+    .hub-grid > :nth-child(6) .hub-icon { background: #e9f3d2; }
+    .hub-grid > :nth-child(7) .hub-icon { background: #e3efdf; }
+    .hub-grid > :nth-child(8) .hub-icon { background: #d3ebe2; }
+    .hub-card h2 { grid-column: 2; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text-primary); margin: 0; line-height: 1.25; }
+    .hub-card p { grid-column: 2; color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .hub-back { display: inline-block; margin-bottom: 15px; color: #4a5568; text-decoration: none; font-size: 14px; font-weight: 500; }
     .hub-frame { width: 100%; height: calc(100vh - 60px); min-height: 700px; border: none; border-radius: 12px; box-shadow: var(--card-shadow-hover); background: #fff; }
     @media (max-width: 640px) { .hub-wrap h1 { font-size: 1.75rem; } }
@@ -84,7 +97,7 @@
             </svg>
           </div>
           <h2>Walk Library</h2>
-          <p>Browse the verified catalog of CBMW walking routes and request changes.</p>
+          <p>View and Maintain the CBMW routes</p>
         </a>
 
         <!-- Leader Network-->
@@ -111,7 +124,7 @@
             </svg>
           </div>
           <h2>Walk Grading</h2>
-          <p>From easy strolls to strenuous mountain climbs. Find the perfect match for your fitness level.</p>
+          <p>Helpful information here to help grade your walks correctly.</p>
         </div>
 
         <!-- Safety: placeholder -->
@@ -121,7 +134,7 @@
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             </svg>
           </div>
-          <h2>Safety Advice and Insurance</h2>
+          <h2>Leader Responsibilities &amp; Advice</h2>
           <p>Safety conventions, liability insurance and mandatory equipment.</p>
         </div>
 
@@ -133,7 +146,7 @@
               <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z"></path>
             </svg>
           </div>
-          <h2>Library</h2>
+          <h2>Resource Library</h2>
           <p>Documentation templates, safety guidelines, and leadership files.</p>
         </div>
 
@@ -146,7 +159,19 @@
             </svg>
           </div>
           <h2>Calendar</h2>
-          <p>Committee agenda milestones, event dates, and operational deadlines.</p>
+          <p>Important dates</p>
+        </div>
+
+        <!-- Noticeboard: placeholder until it has a page -->
+        <div class="hub-card">
+          <div class="hub-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+          </div>
+          <h2>Noticeboard</h2>
+          <p>Announcements and news for group leaders.</p>
         </div>
 
       </main>
