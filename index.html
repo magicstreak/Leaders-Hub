@@ -114,8 +114,8 @@
           <p>Contact details for group leaders, and requests to update your own.</p>
         </a>
 
-        <!-- Walk Grading: placeholder until its page is linked -->
-        <div class="hub-card">
+        <!-- Post Walk Stats: opens the stats app inside the hub -->
+        <a href="?view=post-walk-stats" class="hub-card">
           <div class="hub-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <line x1="18" y1="20" x2="18" y2="10"></line>
@@ -125,7 +125,7 @@
           </div>
           <h2>Post Walk Stats</h2>
           <p>Helpful information here to help grade your walks correctly.</p>
-        </div>
+        </a>
 
         <!-- Safety: placeholder -->
         <div class="hub-card">
@@ -191,7 +191,8 @@
     const APPS = {
       "programme-scheduler": "https://magicstreak.github.io/CBMW-walk-scheduler/?view=leader",
       "walks-database":      "https://magicstreak.github.io/CBMW-Programme-Planner/?view=leader",
-      "leaders":             "https://magicstreak.github.io/Leaders-Hub/Pages/Leader-Directory.html?view=leader"
+      "leaders":             "https://magicstreak.github.io/Leaders-Hub/Pages/Leader-Directory.html?view=leader",
+      "post-walk-stats":     "https://magicstreak.github.io/postwalk-stats/"
     };
 
     const current = new URLSearchParams(window.location.search).get("view");
