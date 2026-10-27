@@ -102,6 +102,13 @@
     .request-item:first-of-type { border-top: none; }
     .request-item .who { font-weight: 600; }
     .request-item .meta { color: var(--text-muted); font-size: 0.85rem; margin: 2px 0 6px; }
+    .my-requests > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+    .my-requests > summary::-webkit-details-marker { display: none; }
+    .my-requests > summary::after { content: "▾"; color: var(--text-muted); font-size: 1rem; }
+    .my-requests:not([open]) > summary::after { content: "▸"; }
+    .my-requests > summary h2 { margin-bottom: 0; }
+    .my-requests[open] > summary h2 { margin-bottom: 10px; }
+    .hide-request-btn { margin-top: 6px; }
     .change-list { margin: 0 0 8px; padding-left: 18px; font-size: 0.9rem; }
     .change-list li { margin-bottom: 2px; }
     .request-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -258,8 +265,10 @@
       </section>
 
       <section class="card" id="my-requests-panel" hidden>
-        <h2>My change requests</h2>
-        <div id="my-requests-list"></div>
+        <details class="my-requests" open>
+          <summary><h2 id="my-requests-title">My change requests</h2></summary>
+          <div id="my-requests-list"></div>
+        </details>
       </section>
 
       <div class="table-wrap">
@@ -514,17 +523,37 @@
     function renderMyRequests() {
       const panel = document.getElementById("my-requests-panel");
       if (!isLeader || !myLeaderId) { panel.hidden = true; return; }
-      const mine = Object.values(requests).filter((r) => r && r.leader_id === myLeaderId)
+      // Requests the leader has hidden stay in Firebase (leader_requests) but are not listed for them
+      const mine = Object.values(requests).filter((r) => r && r.leader_id === myLeaderId && !r.hidden_by_requester)
         .sort((a, b) => String(b.requested_at).localeCompare(String(a.requested_at)));
       panel.hidden = mine.length === 0;
+      document.getElementById("my-requests-title").textContent = `My change requests (${mine.length})`;
       document.getElementById("my-requests-list").innerHTML = mine.map((r) => `
         <div class="request-item">
           <div class="meta">Requested ${escapeHtml(formatDate(r.requested_at))}
             <span class="pill pill-${escapeHtml(r.status)}">${escapeHtml(statusLabel(r.status))}</span></div>
           ${changeListHtml(r)}
           ${r.status === "rejected" && r.reason ? `<div class="meta">Reason: ${escapeHtml(r.reason)}</div>` : ""}
+          ${r.status !== "pending" ? `<button type="button" class="btn btn-small hide-request-btn" data-action="hide-request" data-request="${escapeHtml(r.request_id)}">Hide</button>` : ""}
         </div>`).join("");
     }
+
+    // Hide: hides the request from this leader only. The record stays in Firebase and admins still see it.
+    document.getElementById("my-requests-list").addEventListener("click", async (e) => {
+      const btn = e.target.closest('[data-action="hide-request"]');
+      if (!btn || !db) return;
+      btn.disabled = true;
+      try {
+        await update(ref(db, "leader_requests/" + btn.dataset.request), {
+          hidden_by_requester: true,
+          hidden_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        btn.disabled = false;
+        alert("Could not hide this request. Please try again.");
+        console.error("Hide request failed:", err);
+      }
+    });
 
     function statusLabel(status) {
       return { pending: "Waiting for approval", approved: "Approved", rejected: "Rejected" }[status] || status;
