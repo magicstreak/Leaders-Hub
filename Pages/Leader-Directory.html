@@ -185,7 +185,43 @@
     }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 
-    /* Phone: stack the form and let the table scroll sideways */
+    /* Laptops, tablets and phones: each leader becomes a card when the full table would not fit */
+    @media (max-width: 1100px) {
+      .leaders-table thead { display: none; }
+      .leaders-table, .leaders-table tbody, .leaders-table tr { display: block; width: 100%; }
+      .leaders-table tr {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 6px 12px;
+        margin-bottom: 10px;
+      }
+      .leaders-table tr.is-me { background: #f0f9f3; }
+      .leaders-table tr.is-me td { background: none; }
+      .leaders-table td {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: none;
+        padding: 4px 0;
+        white-space: normal;
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+      .leaders-table td:empty { display: none; }
+      .leaders-table td::before {
+        content: attr(data-label);
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        text-align: left;
+        flex-shrink: 0;
+      }
+      .leaders-table td.actions-cell { justify-content: flex-start; flex-wrap: wrap; padding-bottom: 8px; }
+      .leaders-table td.actions-cell::before { display: none; }
+    }
+
+    /* Phone: stack the form */
     @media (max-width: 640px) {
       .form-grid { grid-template-columns: 1fr; }
       .toolbar input[type="search"], .toolbar select { min-width: 0; width: 100%; }
@@ -233,11 +269,10 @@
               <th class="actions-col" id="actions-head" hidden></th>
               <th class="sortable" data-sort="id" tabindex="0" aria-sort="ascending">ID <span class="sort-indicator">↑</span></th>
               <th class="sortable" data-sort="name" tabindex="0">Name <span class="sort-indicator">↕</span></th>
-              <th class="sortable" data-sort="phone1" tabindex="0">Phone 1 <span class="sort-indicator">↕</span></th>
-              <th class="sortable" data-sort="phone2" tabindex="0">Phone 2 <span class="sort-indicator">↕</span></th>
+              <th id="display-head" class="sortable" data-sort="display" tabindex="0">Display name <span class="sort-indicator">↕</span></th>
+              <th class="sortable" data-sort="phone1" tabindex="0">Phones <span class="sort-indicator">↕</span></th>
               <th id="email-head" class="sortable" data-sort="email" tabindex="0">Email <span class="sort-indicator">↕</span></th>
               <th class="sortable" data-sort="whatsapp" tabindex="0">WhatsApp <span class="sort-indicator">↕</span></th>
-              <th class="sortable" data-sort="linked" tabindex="0">Linked leader <span class="sort-indicator">↕</span></th>
             </tr>
           </thead>
           <tbody id="leaders-body"></tbody>
@@ -307,11 +342,11 @@
     const EDITABLE_FIELDS = [
       { key: "first_name", label: "First name", required: true },
       { key: "surname", label: "Surname", required: true },
+      { key: "display_name", label: "Display name", hint: "Shown to walkers instead of the full name. Leave blank to show the full name." },
       { key: "phone_1", label: "Phone 1", type: "tel", required: true },
       { key: "phone_2", label: "Phone 2", type: "tel" },
       { key: "email_add", label: "Email", type: "email", required: true },
       { key: "whats_app", label: "WhatsApp preferred", type: "whatsapp" },
-      { key: "linked_leader", label: "Linked leader", type: "leader", hint: "Another leader, e.g. a co-leader" },
     ];
     const ID_FIELD = { key: "leader_id", label: "Leader ID", required: true };
     const CHANGE_LABELS = Object.fromEntries([ID_FIELD, ...EDITABLE_FIELDS].map((f) => [f.key, f.label]));
@@ -334,9 +369,6 @@
       return Object.values(bookings).filter(Boolean).filter((b) =>
         b.leader_id ? b.leader_id === leader.leader_id : (b.leader_name && b.leader_name === name)
       ).length;
-    }
-    function linkedFromCount(leader) {
-      return leaders.filter((l) => l.linked_leader === leader.leader_id).length;
     }
 
     /* ========================================================= RENDER ========================================================= */
@@ -372,11 +404,10 @@
     function leaderSortValue(l, key) {
       if (key === "id") return Number(l.leader_id);
       if (key === "name") return fullName(l).toLowerCase();
+      if (key === "display") return str(l.display_name).toLowerCase();
       if (key === "phone1") return str(l.phone_1);
-      if (key === "phone2") return str(l.phone_2);
       if (key === "email") return str(l.email_add).toLowerCase();
       if (key === "whatsapp") return l.whats_app === "y" ? 0 : 1;
-      if (key === "linked") { const linked = leaderById(l.linked_leader); return linked ? fullName(linked).toLowerCase() : ""; }
       return "";
     }
     function sortLeaders(rows) {
@@ -416,17 +447,18 @@
       const term = str(document.getElementById("search").value).toLowerCase();
       // Leader view: emails are not shown in the list or searched (they remain in the edit/request modal).
       document.getElementById("email-head").hidden = isLeader;
+      // Display name: shown to leaders and admins only (walkers do not see the column)
+      document.getElementById("display-head").hidden = VIEW === "walker";
       const rows = sortLeaders(leaders.filter((l) => {
         if (!term) return true;
         const searchable = isLeader
-          ? [l.leader_id, fullName(l), l.phone_1, l.phone_2]
-          : [l.leader_id, fullName(l), l.email_add, l.phone_1, l.phone_2];
+          ? [l.leader_id, fullName(l), l.display_name, l.phone_1, l.phone_2]
+          : [l.leader_id, fullName(l), l.display_name, l.email_add, l.phone_1, l.phone_2];
         return searchable.join(" ").toLowerCase().includes(term);
       }));
       document.getElementById("empty-note").hidden = rows.length > 0;
 
       document.getElementById("leaders-body").innerHTML = rows.map((l) => {
-        const linked = leaderById(l.linked_leader);
         const mine = isLeader && l.leader_id === myLeaderId;
         const waiting = pendingFor(l.leader_id).length > 0;
 
@@ -442,13 +474,12 @@
 
         return `<tr class="${mine ? "is-me" : ""}">
           ${isAdmin ? `<td class="actions-cell">${actions}</td>` : ""}
-          <td class="id-cell">${escapeHtml(l.leader_id)}</td>
-          <td>${escapeHtml(fullName(l))}${mine ? ` <span class="muted">(you)</span>` : ""}${waiting && VIEW !== "walker" ? ` <span class="pill pill-pending">Change pending</span>` : ""}${requestBtn}</td>
-          <td>${l.phone_1 ? `<a href="tel:${escapeHtml(l.phone_1.replace(/[^\d+]/g, ""))}">${escapeHtml(l.phone_1)}</a>` : "–"}</td>
-          <td>${l.phone_2 ? `<a href="tel:${escapeHtml(l.phone_2.replace(/[^\d+]/g, ""))}">${escapeHtml(l.phone_2)}</a>` : "–"}</td>
-          ${isLeader ? "" : `<td>${l.email_add ? `<a href="mailto:${escapeHtml(l.email_add)}">${escapeHtml(l.email_add)}</a>` : "–"}</td>`}
-          <td>${l.whats_app === "y" ? `<span class="pill pill-whatsapp">WhatsApp</span>` : ""}</td>
-          <td>${linked ? `${escapeHtml(fullName(linked))} <span class="muted">(${escapeHtml(linked.leader_id)})</span>` : (l.linked_leader ? `<span class="muted">${escapeHtml(l.linked_leader)} (missing)</span>` : "–")}</td>
+          <td class="id-cell" data-label="ID">${escapeHtml(l.leader_id)}</td>
+          <td data-label="Name">${escapeHtml(fullName(l))}${mine ? ` <span class="muted">(you)</span>` : ""}${waiting && VIEW !== "walker" ? ` <span class="pill pill-pending">Change pending</span>` : ""}${requestBtn}</td>
+          ${VIEW === "walker" ? "" : `<td data-label="Display name">${escapeHtml(str(l.display_name) || "–")}</td>`}
+          <td data-label="Phones">${[l.phone_1, l.phone_2].filter((n) => str(n)).map((n) => `<a href="tel:${escapeHtml(str(n).replace(/[^\d+]/g, ""))}">${escapeHtml(str(n))}</a>`).join(", ") || "–"}</td>
+          ${isLeader ? "" : `<td data-label="Email">${l.email_add ? `<a href="mailto:${escapeHtml(l.email_add)}">${escapeHtml(l.email_add)}</a>` : "–"}</td>`}
+          <td data-label="WhatsApp">${l.whats_app === "y" ? `<span class="pill pill-whatsapp">WhatsApp</span>` : ""}</td>
         </tr>`;
       }).join("");
 
@@ -605,11 +636,6 @@
       if (!/^[+\d][\d\s()-]{5,}$/.test(record.phone_1)) return showError("Phone 1 should be a phone number."), null;
       if (record.phone_2 && !/^[+\d][\d\s()-]{5,}$/.test(record.phone_2)) return showError("Phone 2 should be a phone number, or left blank."), null;
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email_add)) return showError("Email does not look valid."), null;
-      if (record.linked_leader) {
-        const selfId = mode === "request" ? dialogLeader.leader_id : record.leader_id;
-        if (record.linked_leader === selfId) return showError("A leader cannot be linked to themselves."), null;
-        if (!leaderById(record.linked_leader)) return showError("The linked leader does not exist."), null;
-      }
       return record;
     }
 
@@ -697,10 +723,8 @@
       if (btn.dataset.action === "request" && isLeader) openDialog("request", leader);
       if (btn.dataset.action === "delete" && isAdmin) {
         const usedBy = bookingCountFor(leader);
-        const linkedBy = linkedFromCount(leader);
         const notes = [];
         if (usedBy) notes.push(`${usedBy} walk booking(s) use this leader. Their name stays on the booking, but the contact details will no longer show.`);
-        if (linkedBy) notes.push(`${linkedBy} leader(s) are linked to this leader. Their link will show as missing.`);
         const pendingReqs = Object.values(requests).filter((r) => r && r.status === "pending" && String(r.leader_id) === String(leader.leader_id));
         if (pendingReqs.length) notes.push(`${pendingReqs.length} change request(s) from this leader will also be deleted.`);
         const message = `Delete ${fullName(leader)} (ID ${leader.leader_id})?${notes.length ? "\n\n" + notes.join("\n") : ""}`;
@@ -752,7 +776,7 @@
     function start() {
       setupPage();
       if (!db) {
-        document.getElementById("leaders-body").innerHTML = `<tr><td colspan="8" class="empty">The database could not be reached.</td></tr>`;
+        document.getElementById("leaders-body").innerHTML = `<tr><td colspan="9" class="empty">The database could not be reached.</td></tr>`;
         return;
       }
       onValue(ref(db, "leaders"), (snapshot) => {
