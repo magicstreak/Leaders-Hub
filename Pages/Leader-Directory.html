@@ -248,7 +248,6 @@
     <div id="picker-wrap" class="picker-bar" hidden>
       <label for="leader-email" class="muted">I am</label>
       <input id="leader-email" type="email" placeholder="Your email address" aria-label="Your email address" autocomplete="email" />
-      <button type="button" id="leader-change" class="btn" hidden>Change</button>
       <span id="picker-msg" class="muted" aria-live="polite" hidden></span>
     </div>
 
@@ -402,14 +401,12 @@
       if (!isLeader) return;
       const msg = document.getElementById("picker-msg");
       const input = document.getElementById("leader-email");
-      const changeBtn = document.getElementById("leader-change");
       const me = leaders.find((l) => l.leader_id === myLeaderId);
       // Once identified, the email is locked and the leader can use Change to switch
       input.disabled = !!me;
-      changeBtn.hidden = !me;
       if (me) {
         msg.hidden = false;
-        msg.textContent = `Logged in as ${str(me.email_add)}`;
+        msg.textContent = `I am currently logged in as ${fullName(me)}`;
       } else {
         msg.hidden = true;
         msg.textContent = "";
@@ -746,18 +743,6 @@
       rememberLeaderEmail(typed);
       renderAll();
     }
-    document.getElementById("leader-change").addEventListener("click", () => {
-      rememberLeaderEmail("");
-      hubEmail = "";
-      myLeaderId = "";
-      const input = document.getElementById("leader-email");
-      input.value = "";
-      input.disabled = false;
-      document.getElementById("leader-change").hidden = true;
-      document.getElementById("picker-msg").dataset.notFound = "";
-      renderAll();
-      input.focus();
-    });
     document.getElementById("leader-email").addEventListener("change", identifyByEmail);
     document.getElementById("leader-email").addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); identifyByEmail(); }
