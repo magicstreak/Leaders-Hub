@@ -736,12 +736,41 @@
         return;
       }
       myLeaderId = match.leader_id;
+      rememberLeaderEmail(typed);
       renderAll();
     }
     document.getElementById("leader-email").addEventListener("change", identifyByEmail);
     document.getElementById("leader-email").addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); identifyByEmail(); }
     });
+
+    // Leader email: passed from the Leaders Hub (?email=), or remembered on this device.
+    // Used to identify the leader once the leader list has loaded.
+    const LEADER_EMAIL_KEY = "cbmw-leader-email";
+    let hubEmail = "";
+    try {
+      const hubUrl = new URL(window.location.href);
+      hubEmail = hubUrl.searchParams.get("email") || "";
+      if (hubEmail) {
+        hubUrl.searchParams.delete("email");
+        history.replaceState(null, "", hubUrl.pathname + hubUrl.search + hubUrl.hash);
+      }
+    } catch (e) {}
+    function rememberLeaderEmail(email) {
+      try { localStorage.setItem(LEADER_EMAIL_KEY, email); } catch (e) {}
+    }
+    let leaderEmailApplied = false;
+    function applySavedLeaderEmail() {
+      if (leaderEmailApplied) return;
+      leaderEmailApplied = true;
+      let email = hubEmail;
+      if (!email) { try { email = localStorage.getItem(LEADER_EMAIL_KEY) || ""; } catch (e) {} }
+      const input = document.getElementById("leader-email");
+      if (!input || !email) return;
+      input.value = email;
+      identifyByEmail();
+    }
+
 
     // Row buttons (edit, delete, request change)
     document.getElementById("leaders-body").addEventListener("click", async (e) => {
@@ -814,6 +843,7 @@
         const data = snapshot.val() || {};
         leaders = Object.values(data).filter(Boolean)
           .sort((a, b) => Number(a.leader_id) - Number(b.leader_id));
+        if (leaders.length) applySavedLeaderEmail();
         renderAll();
       }, (error) => console.error("Unable to load leaders:", error));
 
