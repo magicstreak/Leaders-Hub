@@ -77,6 +77,10 @@
 
     /* Back link and embedded app view */
     .hub-back { display: inline-block; margin-bottom: 15px; color: #4a5568; text-decoration: none; font-size: 14px; font-weight: 500; }
+    .hub-identify { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.9rem; }
+    .hub-identify input { padding: 0.4rem 0.6rem; border: 1px solid var(--card-border); border-radius: 6px; min-width: 240px; font: inherit; color: var(--text-primary); background: #fff; }
+    .hub-identify button { padding: 0.4rem 0.7rem; border: 1px solid var(--card-border); border-radius: 6px; background: #fff; color: var(--text-secondary); font: inherit; cursor: pointer; }
+    .hub-identify-msg { flex-basis: 100%; font-size: 0.8rem; color: var(--text-secondary); }
     .hub-frame { width: 100%; height: calc(100vh - 60px); min-height: 700px; border: none; border-radius: 12px; box-shadow: var(--card-shadow-hover); background: #fff; }
 
     @media (prefers-reduced-motion: reduce) {
@@ -89,6 +93,12 @@
   <div class="hub-container">
     <div id="hub-cards">
       <h1>Leaders Hub</h1>
+      <div class="hub-identify">
+        <label for="hub-email">I am</label>
+        <input id="hub-email" type="email" placeholder="Your email address" autocomplete="email" aria-label="Your email address" />
+        <button type="button" id="hub-email-clear">Forget on this device</button>
+        <span id="hub-email-msg" class="hub-identify-msg" aria-live="polite"></span>
+      </div>
       <main class="hub-grid">
 
         <a href="?view=programme-scheduler" class="hub-card" style="--accent: #1e8a4f;">
@@ -212,7 +222,41 @@
       "post-walk-stats":     "https://magicstreak.github.io/postwalk-stats/"
     };
 
+    // The email is kept on this device and passed to each app, so people enter it once here
+    const EMAIL_KEY = "cbmw-leader-email";
+    function savedEmail() {
+      try { return localStorage.getItem(EMAIL_KEY) || ""; } catch (e) { return ""; }
+    }
+    function saveEmail(value) {
+      try {
+        if (value) localStorage.setItem(EMAIL_KEY, value); else localStorage.removeItem(EMAIL_KEY);
+      } catch (e) { /* storage blocked: the apps still ask for the email */ }
+    }
+
     const current = new URLSearchParams(window.location.search).get("view");
+
+    const input = document.getElementById("hub-email");
+    const msg = document.getElementById("hub-email-msg");
+    if (input) {
+      const showStatus = () => {
+        msg.textContent = input.value
+          ? "Saved on this device. Opening an app uses this email."
+          : "Enter your email so the apps know which leader you are.";
+      };
+      input.value = savedEmail();
+      showStatus();
+      input.addEventListener("change", () => {
+        input.value = input.value.trim();
+        saveEmail(input.value);
+        showStatus();
+      });
+      document.getElementById("hub-email-clear").addEventListener("click", () => {
+        saveEmail("");
+        input.value = "";
+        showStatus();
+      });
+    }
+
     if (current && APPS[current]) {
       document.getElementById("hub-cards").style.display = "none";
       // Full-screen app view: the page itself stops scrolling, so only the app scrolls
@@ -231,7 +275,9 @@
       frame.style.height = "auto";
       frame.style.minHeight = "0";
       frame.style.boxShadow = "none";
-      frame.src = APPS[current];
+      const email = savedEmail();
+      const joiner = APPS[current].includes("?") ? "&" : "?";
+      frame.src = APPS[current] + (email ? joiner + "email=" + encodeURIComponent(email) : "");
     }
   })();
 </script>
