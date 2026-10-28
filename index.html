@@ -77,10 +77,14 @@
 
     /* Back link and embedded app view */
     .hub-back { display: inline-block; margin-bottom: 15px; color: #4a5568; text-decoration: none; font-size: 14px; font-weight: 500; }
-    .hub-identify { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.9rem; }
+    .hub-identify { margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.9rem; }
+    .hub-identify > div { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+    .hub-wrap [hidden] { display: none !important; }
     .hub-identify input { padding: 0.4rem 0.6rem; border: 1px solid var(--card-border); border-radius: 6px; min-width: 240px; font: inherit; color: var(--text-primary); background: #fff; }
-    .hub-identify button { padding: 0.4rem 0.7rem; border: 1px solid var(--card-border); border-radius: 6px; background: #fff; color: var(--text-secondary); font: inherit; cursor: pointer; }
-    .hub-identify-msg { flex-basis: 100%; font-size: 0.8rem; color: var(--text-secondary); }
+    .hub-identify button { padding: 0.4rem 0.8rem; border: 1px solid #2d5b3e; border-radius: 6px; background: #2d5b3e; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    .hub-identify button.hub-secondary { background: #fff; color: var(--text-secondary); border-color: var(--card-border); font-weight: 500; }
+    .hub-identify strong { color: var(--text-primary); }
+    .hub-identify-msg { font-size: 0.8rem; color: #b42318; }
     .hub-frame { width: 100%; height: calc(100vh - 60px); min-height: 700px; border: none; border-radius: 12px; box-shadow: var(--card-shadow-hover); background: #fff; }
 
     @media (prefers-reduced-motion: reduce) {
@@ -94,12 +98,18 @@
     <div id="hub-cards">
       <h1>Leaders Hub</h1>
       <div class="hub-identify">
-        <label for="hub-email">I am</label>
-        <input id="hub-email" type="email" placeholder="Your email address" autocomplete="email" aria-label="Your email address" />
-        <button type="button" id="hub-email-clear">Forget on this device</button>
-        <span id="hub-email-msg" class="hub-identify-msg" aria-live="polite"></span>
+        <div id="hub-login-form">
+          <label for="hub-email">Email</label>
+          <input id="hub-email" type="email" placeholder="you@example.com" autocomplete="email" aria-label="Email" />
+          <button type="button" id="hub-login-btn">Log in</button>
+          <span id="hub-email-msg" class="hub-identify-msg" aria-live="polite"></span>
+        </div>
+        <div id="hub-logged-in" hidden>
+          <span>Logged in as <strong id="hub-user-email"></strong></span>
+          <button type="button" id="hub-logout-btn" class="hub-secondary">Log out</button>
+        </div>
       </div>
-      <main class="hub-grid">
+      <main class="hub-grid" id="hub-grid" hidden>
 
         <a href="?view=programme-scheduler" class="hub-card" style="--accent: #1e8a4f;">
           <div class="hub-icon">
@@ -236,26 +246,41 @@
     const current = new URLSearchParams(window.location.search).get("view");
 
     const input = document.getElementById("hub-email");
+    const loginForm = document.getElementById("hub-login-form");
+    const loggedIn = document.getElementById("hub-logged-in");
+    const who = document.getElementById("hub-user-email");
     const msg = document.getElementById("hub-email-msg");
-    if (input) {
-      const showStatus = () => {
-        msg.textContent = input.value
-          ? "Saved on this device. Opening an app uses this email."
-          : "Enter your email so the apps know which leader you are.";
-      };
-      input.value = savedEmail();
-      showStatus();
-      input.addEventListener("change", () => {
-        input.value = input.value.trim();
-        saveEmail(input.value);
-        showStatus();
-      });
-      document.getElementById("hub-email-clear").addEventListener("click", () => {
-        saveEmail("");
-        input.value = "";
-        showStatus();
-      });
+    function showLoginState() {
+      const email = savedEmail();
+      loginForm.hidden = !!email;
+      loggedIn.hidden = !email;
+      // The action cards are shown only once someone has logged in
+      document.getElementById("hub-grid").hidden = !email;
+      who.textContent = email;
+      input.value = "";
     }
+    function logIn() {
+      const value = input.value.trim();
+      if (!value || !input.checkValidity()) {
+        msg.textContent = "Enter a valid email address.";
+        input.focus();
+        return;
+      }
+      msg.textContent = "";
+      saveEmail(value);
+      showLoginState();
+    }
+    showLoginState();
+    document.getElementById("hub-login-btn").addEventListener("click", logIn);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); logIn(); }
+    });
+    document.getElementById("hub-logout-btn").addEventListener("click", () => {
+      saveEmail("");
+      msg.textContent = "";
+      showLoginState();
+      input.focus();
+    });
 
     if (current && APPS[current]) {
       document.getElementById("hub-cards").style.display = "none";
