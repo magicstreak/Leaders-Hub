@@ -386,7 +386,7 @@
     function setupPage() {
       const titles = {
         walker: ["CBMW Leader Network", ""],
-        leader: ["CBMW Leader Network", "You can request changes to your own details. An admin approves each change."],
+        leader: ["CBMW Leader Network", "You can edit your own details. Changes save straight away."],
         admin: ["CBMW Leader Network", "Add, edit or remove leaders, and approve or reject change requests from leaders."],
       };
       document.getElementById("page-title").textContent = titles[VIEW][0];
@@ -482,9 +482,9 @@
           actions = `<button type="button" class="btn btn-small" data-action="edit" data-id="${escapeHtml(l.leader_id)}">Edit</button>
             <button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="${escapeHtml(l.leader_id)}">Delete</button>`;
         }
-        // Leader view: the request button sits beside the leader's own name, so it shows without scrolling
+        // Leader view: the Edit button sits beside the leader's own name, so it shows without scrolling
         const requestBtn = mine
-          ? ` <button type="button" class="btn btn-small" data-action="request" data-id="${escapeHtml(l.leader_id)}">Request change</button>`
+          ? ` <button type="button" class="btn btn-small" data-action="edit" data-id="${escapeHtml(l.leader_id)}">Edit</button>`
           : "";
 
         return `<tr class="${mine ? "is-me" : ""}">
@@ -621,9 +621,10 @@
         fields = [ID_FIELD, ...EDITABLE_FIELDS];
       } else if (mode === "edit") {
         title.textContent = `Edit ${fullName(leader)}`;
-        lede.textContent = "Admin changes apply straight away.";
+        // Admins can change the leader ID too; a leader edits only their own details, which save straight away
+        lede.textContent = isAdmin ? "Admin changes apply straight away." : "Your changes save straight away.";
         submit.textContent = "Save changes";
-        fields = [ID_FIELD, ...EDITABLE_FIELDS];
+        fields = isAdmin ? [ID_FIELD, ...EDITABLE_FIELDS] : EDITABLE_FIELDS;
       } else {
         title.textContent = `Request a change for ${fullName(leader)}`;
         lede.textContent = "Your changes are sent to an admin for approval. Your details stay the same until then.";
@@ -657,7 +658,8 @@
     function readForm(mode) {
       const get = (key) => str(form.elements[key]?.value);
       const record = {};
-      if (mode !== "request") record.leader_id = get("leader_id");
+      // A leader editing their own details keeps their existing ID
+      if (mode !== "request") record.leader_id = mode === "edit" && !isAdmin && dialogLeader ? String(dialogLeader.leader_id) : get("leader_id");
       for (const f of EDITABLE_FIELDS) record[f.key] = get(f.key);
       if (record.whats_app !== "y") record.whats_app = "n";
 
@@ -665,7 +667,8 @@
         if (record.leader_id && !/^\d+$/.test(record.leader_id)) return showError("Leader ID must be a number."), null;
         if (mode === "create" && leaderById(record.leader_id)) return showError(`Leader ID ${record.leader_id} is already used.`), null;
       }
-      for (const f of [...(mode === "request" ? [] : [ID_FIELD]), ...EDITABLE_FIELDS]) {
+      const idFields = mode === "request" || (mode === "edit" && !isAdmin) ? [] : [ID_FIELD];
+      for (const f of [...idFields, ...EDITABLE_FIELDS]) {
         if (f.required && !record[f.key]) return showError(`${f.label} is required.`), null;
       }
       if (!/^[+\d][\d\s()-]{5,}$/.test(record.phone_1)) return showError("Phone 1 should be a phone number."), null;
@@ -684,9 +687,14 @@
 
       try {
         if (mode === "create" || mode === "edit") {
-          const waitingFor = Object.values(requests).filter((r) => r && r.status === "pending" && String(r.leader_id) === String(record.leader_id));
-          if (mode === "edit" && waitingFor.length && !confirm("This leader has a change waiting for approval. Save anyway?")) return;
-          await set(ref(db, "leaders/" + record.leader_id), record);
+          if (mode === "edit" && !isAdmin) {
+            // A leader's own details save straight away, without an admin approval step
+            await update(ref(db, "leaders/" + record.leader_id), record);
+          } else {
+            const waitingFor = Object.values(requests).filter((r) => r && r.status === "pending" && String(r.leader_id) === String(record.leader_id));
+            if (mode === "edit" && waitingFor.length && !confirm("This leader has a change waiting for approval. Save anyway?")) return;
+            await set(ref(db, "leaders/" + record.leader_id), record);
+          }
         } else {
           const current = dialogLeader;
           const changes = {};
@@ -783,7 +791,7 @@
       const leader = leaderById(btn.dataset.id);
       if (!leader) return;
 
-      if (btn.dataset.action === "edit" && isAdmin) openDialog("edit", leader);
+      if (btn.dataset.action === "edit" && (isAdmin || (isLeader && String(leader.leader_id) === String(myLeaderId)))) openDialog("edit", leader);
       if (btn.dataset.action === "request" && isLeader) openDialog("request", leader);
       if (btn.dataset.action === "delete" && isAdmin) {
         const usedBy = bookingCountFor(leader);
